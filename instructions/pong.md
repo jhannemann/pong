@@ -1082,6 +1082,96 @@ but before we do that,
 we will make things more interesting by giving the ball's velocity
 a non-zero y-component and achieve true two-dimensional movement.
 
+### Moving the Ball at an Angle
+
+Moving the ball at an angle requires a bit of trigonometry and vector math.
+If the ball travels at an `angle` (say about 30º) with respect to the x-axis,
+and has a speed of `BALL_SPEED` in that direction
+(i.e. its *velocity*),
+that velocity can be decomposed into a velocity along the x-axis
+and a velocity along the y-axis as in the following vector diagram:
+
+![picture of the speed vector diagram](vector_diagram.svg)
+
+`BALL_SPEED`, `ball_speed_x`, and `ball_speed_y` form a
+[right triangle](https://en.wikipedia.org/wiki/Right_triangle),
+with `BALL_SPEED` as its hypotenuse,
+`ball_speed_x` being adjacent to `angle`,
+and `ball_speed_y` being opposite to `angle`.
+From the trigonometric ratios,
+we can deduce that
+
+```python
+ball_speed_x = BALL_SPEED * cos(angle)
+ball_speed_y = BALL_SPEED * sin(angle)
+```
+
+where `sin()` is the sine function and `cos()` is the cosine function.
+
+In order to start the ball traveling at an angle,
+we first will have to pick a maximum allowable starting angle.
+If the angle is too large,
+it will take too long for the ball to reach a paddle.
+So let's add the following line to our constants section,
+right after our `BALL_SPEED` and `BALL_SIZE`:
+
+```python
+MAX_ANGLE = 30
+```
+
+We need to import the sine and cosine functions from the math module.
+These functions expect angles to be in radians,
+rather than degrees, so we also need to import a conversion function.
+We also import the random module to access random functions.
+We add the following to our imports section at the very top of the code:
+
+```python
+from math import sin, cos, radians
+import random
+```
+
+Now all we have to do is pick a random angle
+when the game enters the `GAME_ON` state
+(which happens when we handle the `KEYDOWN` event),
+and use the equations above to set the x- and y-components of the speed:
+
+```python
+            # update game state
+            if game_state == GAME_OVER or game_state == GAME_STOP:
+                # pick initial angle
+                angle = radians(random.randint(-MAX_ANGLE, +MAX_ANGLE))
+                ball_speed_x = BALL_SPEED * cos(angle)
+                ball_speed_y = BALL_SPEED * sin(angle)
+                # pick initial direction
+                ball_speed_x *= random.choice((-1, 1))
+                game_state = GAME_ON
+```
+
+The `random.choice((-1, 1))` line randomly picks
+whether the initial x-component is to the left (negative)
+or to the right (positive).
+
+By now,
+we know from the paddles how to bounce things.
+The difference is that for bouncing off the top and bottom boundaries,
+we will have to flip the sign for the y-component,
+rather than the x-component of the speed
+Let's add the following after the code for the paddle bounce:
+
+```python
+if ball.colliderect(TOP_BOUNDARY) or ball.colliderect(BOTTOM_BOUNDARY):
+    if ball.colliderect(TOP_BOUNDARY):
+        ball.top = TOP_BOUNDARY.bottom
+    else:
+        ball.bottom = BOTTOM_BOUNDARY.top
+    ball_speed_y = -ball_speed_y
+```
+
+That's it.
+Running the game now,
+we have a fully functioning Pong game.
+The only thing missing is the scoring.
+
 ## License
 
 SPDX-License-Identifier: CC-BY-SA-4.0

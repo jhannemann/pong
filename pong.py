@@ -4,6 +4,8 @@
 # Jens Hannemann, Kentucky State University, jens.hannemann@kysu.edu
 
 import sys
+from math import sin, cos, radians
+import random
 import pygame
 from pygame.locals import *
 
@@ -36,6 +38,8 @@ FRAMES_PER_SECOND = 30
 
 BALL_SPEED = 8
 BALL_SIZE = 9
+
+MAX_ANGLE = 30
 
 NET = pygame.Rect(WINDOW_WIDTH/2 - NET_WIDTH/2, 0, NET_WIDTH, WINDOW_HEIGHT)
 
@@ -98,6 +102,12 @@ while True:
                 sys.exit()
             # update game state
             if game_state == GAME_OVER or game_state == GAME_STOP:
+                # pick initial angle
+                angle = radians(random.randint(-MAX_ANGLE, +MAX_ANGLE))
+                ball_speed_x = BALL_SPEED * cos(angle)
+                ball_speed_y = BALL_SPEED * sin(angle)
+                # pick initial direction
+                ball_speed_x *= random.choice((-1, 1))
                 game_state = GAME_ON
             # update paddle state
             if event.key == K_w and left_paddle_state == PADDLE_STOP:
@@ -161,6 +171,13 @@ while True:
         if ball.colliderect(LEFT_BOUNDARY) or ball.colliderect(RIGHT_BOUNDARY):
             game_state = GAME_STOP
             ball.center = (WINDOW_WIDTH/2, WINDOW_HEIGHT/2)
+
+        if ball.colliderect(TOP_BOUNDARY) or ball.colliderect(BOTTOM_BOUNDARY):
+            if ball.colliderect(TOP_BOUNDARY):
+                ball.top = TOP_BOUNDARY.bottom
+            else:
+                ball.bottom = BOTTOM_BOUNDARY.top
+            ball_speed_y = -ball_speed_y
 
     # draw scene
     DISPLAY_SURFACE.fill(BLACK)
