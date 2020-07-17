@@ -27,7 +27,15 @@ PADDLE_STOP = 'stop'
 PADDLE_UP = 'up'
 PADDLE_DOWN = 'down'
 
+# game states
+GAME_ON = 'on'
+GAME_STOP = 'stop'
+GAME_OVER = 'over'
+
 FRAMES_PER_SECOND = 30
+
+BALL_SPEED = 8
+BALL_SIZE = 9
 
 NET = pygame.Rect(WINDOW_WIDTH/2 - NET_WIDTH/2, 0, NET_WIDTH, WINDOW_HEIGHT)
 
@@ -60,6 +68,16 @@ right_paddle = pygame.Rect(WINDOW_WIDTH - BOUNDARY_THICKNESS -
 left_paddle_state = PADDLE_STOP
 right_paddle_state = PADDLE_STOP
 
+ball = pygame.Rect(WINDOW_WIDTH/2 - BALL_SIZE/2,
+                   WINDOW_HEIGHT/2 - BALL_SIZE/2,
+                   BALL_SIZE,
+                   BALL_SIZE)
+
+ball_speed_x = BALL_SPEED
+ball_speed_y = 0
+
+game_state = GAME_OVER
+
 pygame.init()
 FPS_CLOCK = pygame.time.Clock()
 
@@ -78,6 +96,9 @@ while True:
             if event.key == K_ESCAPE:
                 pygame.quit()
                 sys.exit()
+            # update game state
+            if game_state == GAME_OVER or game_state == GAME_STOP:
+                game_state = GAME_ON
             # update paddle state
             if event.key == K_w and left_paddle_state == PADDLE_STOP:
                 left_paddle_state = PADDLE_UP
@@ -99,37 +120,54 @@ while True:
                 right_paddle_state = PADDLE_STOP
 
     # update game state
-    if left_paddle_state == PADDLE_UP:
-        left_paddle.y -= PADDLE_SPEED
-    elif left_paddle_state == PADDLE_DOWN:
-        left_paddle.y += PADDLE_SPEED
-    
-    if right_paddle_state == PADDLE_UP:
-        right_paddle.y -= PADDLE_SPEED
-    elif right_paddle_state == PADDLE_DOWN:
-        right_paddle.y += PADDLE_SPEED
+    if game_state == GAME_ON:
+        if left_paddle_state == PADDLE_UP:
+            left_paddle.y -= PADDLE_SPEED
+        elif left_paddle_state == PADDLE_DOWN:
+            left_paddle.y += PADDLE_SPEED
+        
+        if right_paddle_state == PADDLE_UP:
+            right_paddle.y -= PADDLE_SPEED
+        elif right_paddle_state == PADDLE_DOWN:
+            right_paddle.y += PADDLE_SPEED
 
-    # stop paddles at top and bottom boundaries
-    if left_paddle.colliderect(TOP_BOUNDARY):
-        left_paddle_state = PADDLE_STOP
-        left_paddle.top = TOP_BOUNDARY.bottom
-    if left_paddle.colliderect(BOTTOM_BOUNDARY):
-        left_paddle_state = PADDLE_STOP
-        left_paddle.bottom = BOTTOM_BOUNDARY.top
+        # stop paddles at top and bottom boundaries
+        if left_paddle.colliderect(TOP_BOUNDARY):
+            left_paddle_state = PADDLE_STOP
+            left_paddle.top = TOP_BOUNDARY.bottom
+        if left_paddle.colliderect(BOTTOM_BOUNDARY):
+            left_paddle_state = PADDLE_STOP
+            left_paddle.bottom = BOTTOM_BOUNDARY.top
 
-    if right_paddle.colliderect(TOP_BOUNDARY):
-        right_paddle_state = PADDLE_STOP
-        right_paddle.top = TOP_BOUNDARY.bottom
-    if right_paddle.colliderect(BOTTOM_BOUNDARY):
-        right_paddle_state = PADDLE_STOP
-        right_paddle.bottom = BOTTOM_BOUNDARY.top
+        if right_paddle.colliderect(TOP_BOUNDARY):
+            right_paddle_state = PADDLE_STOP
+            right_paddle.top = TOP_BOUNDARY.bottom
+        if right_paddle.colliderect(BOTTOM_BOUNDARY):
+            right_paddle_state = PADDLE_STOP
+            right_paddle.bottom = BOTTOM_BOUNDARY.top
+
+        # update ball position
+        ball.x += ball_speed_x
+        ball.y += ball_speed_y
+
+        # bounce ball off paddles and boundaries
+        if ball.colliderect(left_paddle) or ball.colliderect(right_paddle):
+            if ball.colliderect(left_paddle):
+                ball.left = left_paddle.right
+            else:
+                ball.right = right_paddle.left
+            ball_speed_x = -ball_speed_x
+
+        if ball.colliderect(LEFT_BOUNDARY) or ball.colliderect(RIGHT_BOUNDARY):
+            game_state = GAME_STOP
+            ball.center = (WINDOW_WIDTH/2, WINDOW_HEIGHT/2)
 
     # draw scene
     DISPLAY_SURFACE.fill(BLACK)
     for rect in (NET,
                  TOP_BOUNDARY, BOTTOM_BOUNDARY,
                  LEFT_BOUNDARY, RIGHT_BOUNDARY,
-                 left_paddle, right_paddle):
+                 left_paddle, right_paddle, ball):
         pygame.draw.rect(DISPLAY_SURFACE, WHITE, rect)
     
     pygame.display.update()

@@ -647,7 +647,7 @@ for it.
 Graphically,
 our FSM looks like this:
 
-![picture of the playing field](paddle_fsm.svg)
+![picture of the paddle finite state machine](paddle_fsm.svg)
 
 The initial state is indicated by the transition arrow
 from the little black dot.
@@ -853,6 +853,234 @@ is very similar:
 ```
 
 Running the code now results in the paddles staying on the screen.
+
+### Moving and Bouncing the Ball off the Paddles
+
+When introducing the ball,
+we need to decide on its size and speed.
+We add the following lines after we set our `FRAMES_PER_SECOND`:
+
+```python
+BALL_SPEED = 8
+BALL_SIZE = 9
+```
+
+Since the ball is square,
+using an odd number of pixels for its size is useful,
+as then the ball's center always aligns fully with a pixel on the screen.
+
+#### The Game Finite State Machine
+
+We could be tempted to define states for the ball
+similar to those of the paddles,
+but the ball really is always moving,
+unless there's a pause in the game or the game is over.
+This means the ball state is directly tied to the game state,
+so it is more useful to define game states at this point.
+
+The game can be in any of three states:
+
+```python
+# game states
+GAME_ON = 'on'
+GAME_STOP = 'stop'
+GAME_OVER = 'over'
+```
+
+We can add those lines of code directly
+after the definition of our paddle states.
+
+The finite state machine for our game looks a little different from
+and is more complex than
+the FSM for the paddles:
+
+![picture of the game finite state machine](game_fsm.svg)
+
+The game starts in the `GAME_OVER` state.
+Any key press will start the game and put it into the `GAME_ON` state.
+If the ball hits the left or right boundary,
+we know that the corresponding player has missed it,
+so the game enters the `GAME_STOP` state,
+and the opponent's score is increased by 1.
+If that score reaches 11 points,
+the game enters the `GAME_OVER` state again.
+Otherwise,
+any key press will return to the `GAME_ON` state.
+
+#### Putting the Ball into the Game
+
+Just after where we have created our paddles and their states,
+we put the following lines of code to create the ball
+and initialize our game state machine:
+
+```python
+ball = pygame.Rect(WINDOW_WIDTH/2 - BALL_SIZE/2,
+                   WINDOW_HEIGHT/2 - BALL_SIZE/2,
+                   BALL_SIZE,
+                   BALL_SIZE)
+
+ball_speed_x = BALL_SPEED
+ball_speed_y = 0
+
+game_state = GAME_OVER
+```
+
+The ball has a constant `BALL_SPEED`,
+but it will be moving around our field in two dimensions,
+so its [*velocity*](https://en.wikipedia.org/wiki/Velocity)
+will have two components,
+`ball_speed_x` and `ball_speed_y`.
+For now,
+`ball_speed_x` contains all the `BALL_SPEED`,
+so the ball is moving along the x-axis and does not move in the y-direction.
+
+The next step is somewhat tedious.
+Since we only need to perform collision detection when the game is on,
+we modify the collision detection code to look like the following:
+
+```python
+    # update game state
+    if game_state == GAME_ON:
+        if left_paddle_state == PADDLE_UP:
+            left_paddle.y -= PADDLE_SPEED
+        elif left_paddle_state == PADDLE_DOWN:
+            left_paddle.y += PADDLE_SPEED
+
+        if right_paddle_state == PADDLE_UP:
+            right_paddle.y -= PADDLE_SPEED
+        elif right_paddle_state == PADDLE_DOWN:
+            right_paddle.y += PADDLE_SPEED
+
+        # stop paddles at top and bottom boundaries
+        if left_paddle.colliderect(TOP_BOUNDARY):
+            left_paddle_state = PADDLE_STOP
+            left_paddle.top = TOP_BOUNDARY.bottom
+        if left_paddle.colliderect(BOTTOM_BOUNDARY):
+            left_paddle_state = PADDLE_STOP
+            left_paddle.bottom = BOTTOM_BOUNDARY.top
+
+        if right_paddle.colliderect(TOP_BOUNDARY):
+            right_paddle_state = PADDLE_STOP
+            right_paddle.top = TOP_BOUNDARY.bottom
+        if right_paddle.colliderect(BOTTOM_BOUNDARY):
+            right_paddle_state = PADDLE_STOP
+            right_paddle.bottom = BOTTOM_BOUNDARY.top
+```
+
+The easiest way to achieve this is to first add the line
+
+```python
+if game_state == GAME_ON:
+```
+
+and then mark the rest of the code and choose `Format->Indent Region`
+from the IDLE menu.
+
+We partially implement the `KEYDOWN` part of the game FSM
+by adding the following lines just after we handle the `K_ESCAPE` event
+but before we update the paddle state:
+
+```python
+            # update game state
+            if game_state == GAME_OVER or game_state == GAME_STOP:
+                game_state = GAME_ON
+```
+
+Moving the ball is simple and similar to moving the paddles.
+We add the following lines of code after the paddle collision detection:
+
+```python
+# update ball position
+ball.x += ball_speed_x
+ball.y += ball_speed_y
+```
+
+The only difference to moving the paddles is
+that the ball moves in two dimensions,
+whereas the paddles only move in one.
+
+The ball can now be drawn by adding it to the tuple for the drawing command:
+
+```python
+    for rect in (NET,
+             TOP_BOUNDARY, BOTTOM_BOUNDARY,
+             LEFT_BOUNDARY, RIGHT_BOUNDARY,
+             left_paddle, right_paddle, ball):
+        pygame.draw.rect(DISPLAY_SURFACE, WHITE, rect)
+```
+
+Running the game now and pressing any key will show,
+that the ball originates from the center of the playing field,
+moves towards the right paddle,
+and then moves off the screen,
+as we have not implemented any collision detection and bouncing
+for the ball yet.
+
+#### Bouncing the Ball
+
+Collision detection with the paddles is easily done in pygame.
+The question is rather,
+what do we do when the ball hits a paddle?
+What does it mean to *bounce*,
+mathematically speaking?
+In a classic, ideal reflection,
+the overall speed of an object stays the same,
+but the component of the velocity *perpendicular* to the orientation
+of the reflecting object changes direction
+(positive to negative or vice versa).
+The following code,
+placed just after our ball position update
+achieves this for collisions with the ball for each paddle:
+
+```python
+        # bounce ball off paddles and boundaries
+        if ball.colliderect(left_paddle) or ball.colliderect(right_paddle):
+            if ball.colliderect(left_paddle):
+                ball.left = left_paddle.right
+            else:
+                ball.right = right_paddle.left
+            ball_speed_x = -ball_speed_x
+```
+
+The speed component perpendicular to the paddle is the x-component,
+which is the one we flip the sign on.
+As with the paddles and the boundaries,
+we first align the ball with the paddle surface,
+and then flip the `ball_speed_x` sign direction.
+
+Running this code will bounce the balls between the two paddles forever.
+If a player moves a paddle out of the way,
+the ball will still travel outside of our playing field forever.
+Let's fix this now.
+
+#### Stopping the Game when the Ball is Out of Bounds
+
+Given our game state machine and pygame's collision detection,
+stopping the game when the ball is out of bounds is extremely simple.
+All it takes are the following lines of code,
+added directly after the collision detection between ball and paddles
+that we have in the previous section:
+
+```python
+        if ball.colliderect(LEFT_BOUNDARY) or ball.colliderect(RIGHT_BOUNDARY):
+            game_state = GAME_STOP
+            ball.center = (WINDOW_WIDTH/2, WINDOW_HEIGHT/2)
+```
+
+In addition to stopping the game,
+we put the ball back where it came from,
+i.e. the center of the screen.
+
+Running the game now leads to a stable state machine,
+as we now transition from the `GAME_OVER` to the `GAME_ON` state initially.
+After that,
+we transition to `GAME_STOP` when the ball goes out of bounds,
+and then again to `GAME_ON` on any key press.
+To reach the `GAME_OVER` state again,
+we will have to implement scoring,
+but before we do that,
+we will make things more interesting by giving the ball's velocity
+a non-zero y-component and achieve true two-dimensional movement.
 
 ## License
 
