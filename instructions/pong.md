@@ -1172,6 +1172,190 @@ Running the game now,
 we have a fully functioning Pong game.
 The only thing missing is the scoring.
 
+### Add Scores to the Game
+
+In the original Pong,
+the first player to reach 11 points wins.
+In addition to that constant,
+we need to also add constants for the positions on the screen
+where we will display the scores.
+We will add those to the constants section of our code:
+
+```python
+MAX_SCORE = 11
+SCORE_POS_Y = 30
+SCORE_POS_LEFT = WINDOW_WIDTH/4
+SCORE_POS_RIGHT = WINDOW_WIDTH * 3/4
+```
+
+We need to initialize our scores,
+just after we set `game_state = GAME_OVER`:
+
+```python
+left_score = 0
+right_score = 0
+```
+
+#### Displaying the Game Over Message
+
+Displaying Text in pygame is more complicated than drawing rectangles.
+The text needs to be *rendered* from the mathematical description of its *font*
+to pixels on a pygame *surface*.
+That surface is *not* the `DISPLAY_SURFACE`,
+but rather a container for the rendered pixels.
+Let's start with the "Game Over" message,
+as its contents and position is constant.
+Not surprisingly,
+the message is displayed whenever the game is in the `GAME_OVER` state.
+We add the following code just after `pygame.init()`:
+
+```python
+FONT = pygame.font.Font('freesansbold.ttf', 24)
+GAME_OVER_SURFACE = FONT.render('GAME     OVER ',
+                                True, WHITE)
+GAME_OVER_RECT = GAME_OVER_SURFACE.get_rect()
+GAME_OVER_RECT.center = (WINDOW_WIDTH/2, WINDOW_HEIGHT/2)
+```
+The 5 spaces in the message string are simply there
+to avoid interference of the net with the text.
+In order to place the text on the screen,
+we need to render the text to a surface,
+but to position that surface,
+we need a rect that is essentially the boundary rectangle
+around the rendered text.
+The `GAME_OVER_SURFACE.get_rect()` call computes that rectangle for us.
+
+Let's display that message by adding the following
+just before `pygame.display.update()`:
+
+```python
+if game_state == GAME_OVER:
+        DISPLAY_SURFACE.blit(GAME_OVER_SURFACE, GAME_OVER_RECT)
+```
+
+The word `blit` is short for *block image transfer*.
+In the early days of video games,
+graphics systems had a special chip that could take a bunch of pixels
+(like our `GAME_OVER_SURFACE`, sometimes referred to as *sprites*)
+and very quickly and efficiently insert it into the graphics memory
+(like our `DISPLAY_SURFACE`) at a given position
+(like our `GAME_OVER_RECT`).
+These chips were called *blitters*,
+and the name stuck.
+Graphics cards to this day have special memory areas for storing sprites,
+and still have special commands for blitting.
+
+Running the game now will display the game over message at startup.
+Once the game is going,
+the message disappears.
+At this time, we will never see the message again,
+as the `GAME_OVER` state can only be reached by scoring 11 points,
+which we haven't implemented yet.
+
+#### Tracking and Displaying the Score
+
+Keeping track of score is straightforward.
+We simply need to add the following code when we check for ball collisions
+with the boundaries
+(make sure to add this after `game_state = GAME_STOP`
+and before `ball.center = (WINDOW_WIDTH/2, WINDOW_HEIGHT/2)`:
+
+```python
+            if ball.colliderect(LEFT_BOUNDARY):
+                right_score += 1
+            if ball.colliderect(RIGHT_BOUNDARY):
+                left_score += 1
+            if left_score == MAX_SCORE or right_score == MAX_SCORE:
+                game_state = GAME_OVER
+```
+
+We also need to reset the score when the game restarts.
+Just after we have chosen the ball angle and direction
+and before we transition to the `GAME_ON` state,
+we can add the lines
+
+```python
+                # reset score
+                if game_state == GAME_OVER:
+                    left_score = 0
+                    right_score = 0
+```
+
+Blitting the score is more complicated than blitting the game over message,
+as the text is not constant.
+
+Before the lines that display the game over message,
+add the following code:
+
+```python
+    left_score_surface = FONT.render('{:d}'.format(left_score), True, WHITE)
+    right_score_surface = FONT.render('{:d}'.format(right_score), True, WHITE)
+    left_score_rect = left_score_surface.get_rect()
+    right_score_rect = right_score_surface.get_rect()
+    left_score_rect.center = (SCORE_POS_LEFT, SCORE_POS_Y)
+    right_score_rect.center = (SCORE_POS_RIGHT, SCORE_POS_Y)
+    DISPLAY_SURFACE.blit(left_score_surface, left_score_rect)
+    DISPLAY_SURFACE.blit(right_score_surface, right_score_rect)
+```
+
+For each score,
+the `format()` call converts the score (which is a number)
+to a string of characters representing that number.
+That string is then rendered to a surface.
+The associated rect is retrieved and its center adjusted
+to the intended output position.
+Finally,
+the score surfaces are blitted to the `DISPLAY_SURFACE`.
+
+We have finally finished our game.
+Running and playing the game should look something like this:
+
+![Image of Pong Game](pong.png)
+
+## Conclusion
+
+The final game took us about 220 lines of code to implement.
+For a simple game engine like pygame,
+this is remarkably short and a testament to Python's and pygame's quality.
+Having been through the experience,
+I hope you agree that the code is quite readable.
+More complex game engines like [Unity](https://unity.com)
+or [Unreal](https://www.unrealengine.com)
+are more sophisticated,
+but still operate within the event-update-drawing paradigm
+with more sophisticated methods of collision detection
+and builtin physics engines.
+Give them a test drive,
+now that you know the principles behind game engines.
+
+### Challenges
+
+We can still improve our Pong game,
+if you're up for a challenge.
+Here are some suggestions:
+
+#### Add Sound
+
+The game is silent for now.
+Pygame [does support sound](https://www.pygame.org/docs/ref/mixer.html).
+Make some noise when the ball hits the paddle.
+Play back a tune when the game is over.
+
+#### Increase Difficulty
+
+Play with the constants in the game to make it more challenging.
+Make the paddles smaller.
+Make the ball move faster.
+Maybe increase the speed of the ball,
+making it faster the longer it is in play.
+
+#### Make the Paddles more Dynamic
+
+In the original Pong,
+the paddles were divided into 8 sections.
+Each section would return the ball at a different angle,
+simulating slicing the ball as one would in table tennis.
+
 ## License
 
 SPDX-License-Identifier: CC-BY-SA-4.0

@@ -41,6 +41,11 @@ BALL_SIZE = 9
 
 MAX_ANGLE = 30
 
+MAX_SCORE = 11
+SCORE_POS_Y = 30
+SCORE_POS_LEFT = WINDOW_WIDTH/4
+SCORE_POS_RIGHT = WINDOW_WIDTH * 3/4
+
 NET = pygame.Rect(WINDOW_WIDTH/2 - NET_WIDTH/2, 0, NET_WIDTH, WINDOW_HEIGHT)
 
 TOP_BOUNDARY = pygame.Rect(0,
@@ -81,8 +86,15 @@ ball_speed_x = BALL_SPEED
 ball_speed_y = 0
 
 game_state = GAME_OVER
+left_score = 0
+right_score = 0
 
 pygame.init()
+FONT = pygame.font.Font('freesansbold.ttf', 24)
+GAME_OVER_SURFACE = FONT.render('GAME     OVER ',
+                                True, WHITE)
+GAME_OVER_RECT = GAME_OVER_SURFACE.get_rect()
+GAME_OVER_RECT.center = (WINDOW_WIDTH/2, WINDOW_HEIGHT/2)
 FPS_CLOCK = pygame.time.Clock()
 
 # set up the window
@@ -108,6 +120,10 @@ while True:
                 ball_speed_y = BALL_SPEED * sin(angle)
                 # pick initial direction
                 ball_speed_x *= random.choice((-1, 1))
+                # reset score
+                if game_state == GAME_OVER:
+                    left_score = 0
+                    right_score = 0
                 game_state = GAME_ON
             # update paddle state
             if event.key == K_w and left_paddle_state == PADDLE_STOP:
@@ -170,6 +186,12 @@ while True:
 
         if ball.colliderect(LEFT_BOUNDARY) or ball.colliderect(RIGHT_BOUNDARY):
             game_state = GAME_STOP
+            if ball.colliderect(LEFT_BOUNDARY):
+                right_score += 1
+            if ball.colliderect(RIGHT_BOUNDARY):
+                left_score += 1
+            if left_score == MAX_SCORE or right_score == MAX_SCORE:
+                game_state = GAME_OVER
             ball.center = (WINDOW_WIDTH/2, WINDOW_HEIGHT/2)
 
         if ball.colliderect(TOP_BOUNDARY) or ball.colliderect(BOTTOM_BOUNDARY):
@@ -186,6 +208,18 @@ while True:
                  LEFT_BOUNDARY, RIGHT_BOUNDARY,
                  left_paddle, right_paddle, ball):
         pygame.draw.rect(DISPLAY_SURFACE, WHITE, rect)
+
+    left_score_surface = FONT.render('{:d}'.format(left_score), True, WHITE)
+    right_score_surface = FONT.render('{:d}'.format(right_score), True, WHITE)
+    left_score_rect = left_score_surface.get_rect()
+    right_score_rect = right_score_surface.get_rect()
+    left_score_rect.center = (SCORE_POS_LEFT, SCORE_POS_Y)
+    right_score_rect.center = (SCORE_POS_RIGHT, SCORE_POS_Y)
+    DISPLAY_SURFACE.blit(left_score_surface, left_score_rect)
+    DISPLAY_SURFACE.blit(right_score_surface, right_score_rect)
+
+    if game_state == GAME_OVER:
+        DISPLAY_SURFACE.blit(GAME_OVER_SURFACE, GAME_OVER_RECT)
     
     pygame.display.update()
     FPS_CLOCK.tick(FRAMES_PER_SECOND)
