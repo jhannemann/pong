@@ -138,6 +138,12 @@ WINDOW_HEIGHT = 480
 BLACK = (0, 0, 0)
 ```
 
+You may have noticed that we use a single `=` here
+and a double `==` later.
+The single `=` attaches a value to a name (a.k.a. a *variable*),
+whereas the double `==` represents a test for equality
+(its result is either true or false).
+
 We chose a window width of 640 pixels, and a window height of 480 pixels.
 This is the original
 [VGA display resolution](https://en.wikipedia.org/wiki/Video_Graphics_Array).
@@ -530,6 +536,275 @@ would have changed.
 Running the program at this stage produces the following window:
 
 ![picture of the playing field](playing_field.png)
+
+### Drawing and Moving the Paddles
+
+Let's chose our paddle geometry:
+
+```python
+PADDLE_WIDTH = 10
+PADDLE_HEIGHT = 60
+PADDLE_OFFSET = 10
+```
+
+The position of `left_paddle` is `PADDLE_OFFSET` to the right
+of the right edge of `LEFT_BOUNDARY`,
+which in itself it `BOUNDARY_THICKNESS` to the right
+of the left edge of the screen.
+The x-coordinate of `left_paddle` thus is `PADDLE_OFFSET + BOUNDARY_THICKNESS`.
+Similar to the `NET`,
+we want the initial position of the paddles to be
+at the center of the `WINDOW_HEIGHT`,
+which means we have to subtract half of the `PADDLE_HEIGHT`.
+The y-coordinate of the left_paddle therefore is
+`WINDOW_HEIGHT - PADDLE_HEIGHT/2`.
+We can thus create the `left_paddle` right after the `RIGHT_BOUNDARY`
+with the following line of code:
+
+```python
+left_paddle = pygame.Rect(BOUNDARY_THICKNESS + PADDLE_OFFSET,
+                          WINDOW_HEIGHT/2 - PADDLE_HEIGHT/2,
+                          PADDLE_WIDTH,
+                          PADDLE_HEIGHT)
+```
+
+Using similar calculations for the `right_paddle`,
+we get
+
+```python
+right_paddle = pygame.Rect(WINDOW_WIDTH - BOUNDARY_THICKNESS -
+                           PADDLE_OFFSET- PADDLE_WIDTH,
+                           WINDOW_HEIGHT/2 - PADDLE_HEIGHT/2,
+                           PADDLE_WIDTH,
+                           PADDLE_HEIGHT)
+```
+
+We add the paddles to the tuple in the drawing commands:
+
+```python
+for rect in (NET,
+             TOP_BOUNDARY, BOTTOM_BOUNDARY,
+             LEFT_BOUNDARY, RIGHT_BOUNDARY,
+             left_paddle, right_paddle):
+    pygame.draw.rect(DISPLAY_SURFACE, WHITE, rect)
+```
+
+When we run the program now,
+we see the paddles in the scene,
+but of course they are stationary as we have not written the code yet
+to move them.
+
+#### The Paddle Finite State Machine
+
+When we move the paddles,
+the game engine still only gives us a snapshot in time.
+The movement is an illusion based on the rapid succession of still pictures.
+We therefore need a way to record the *state* each of the paddles is in
+at any given point in time.
+Each paddle can be in one of three states:
+
+1.  stopped
+2.  moving up
+3.  moving down
+
+The following lines of code create constants representing those states:
+```python
+# paddle states
+PADDLE_STOP = 'stop'
+PADDLE_UP = 'up'
+PADDLE_DOWN = 'down'
+```
+
+We will add them right after the lines defining our paddle size.
+In order to change state
+(or, more formally, to *transition* from one state to another),
+some sort of event has to happen.
+Let's assume the initial state of our left paddle is `PADDLE_STOP.`
+The keys to move our paddle will be `W` and `S`
+(of [WASD fame](https://www.pcgamer.com/how-wasd-became-the-standard-pc-control-scheme/))
+for the left paddle
+and the up and down arrows for the right paddle.
+If the left player presses the `W` key *down*,
+the left paddle should transition to the `PADDLE_UP` state.
+If the left player *releases* the `W` key,
+the left paddle should transition from the `PADDLE_UP` state
+back to the `PADDLE_STOP` state.
+Note that we don't define what happens
+when the player holds the key pressed down,
+as this is a state,
+not an event.
+As a matter of fact,
+the way we set up our states,
+holding the `W` key down is identical to being in the `PADDLE_UP` state.
+We can easily extend this system to cover the `PADDLE_DOWN` state, as well.
+In engineering,
+what we have created,
+is called a
+[*Finite State Machine*](https://en.wikipedia.org/wiki/Finite-state_machine) (FSM).
+It is a very powerful concept,
+and engineers have developed a formal, graphical representation
+for it.
+Graphically,
+our FSM looks like this:
+
+![picture of the playing field](paddle_fsm.svg)
+
+The initial state is indicated by the transition arrow
+from the little black dot.
+
+The following two lines,
+added just after we have created our paddle rectangles,
+represent the initial state of our paddles:
+
+```python
+left_paddle_state = PADDLE_STOP
+right_paddle_state = PADDLE_STOP
+```
+
+Pygame gives us two event types for key presses,
+`KEYDOWN` and `KEYUP`.
+When receiving these event types,
+we can check on which key has been pressed or released
+and update our states accordingly.
+
+The modified event processing loop looks long
+(which is about normal for code expressing even simple concepts),
+but not very complicated.
+Reading it,
+you will find it is an exact representation of our finite state machine:
+
+```python
+    # process events
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == KEYDOWN:
+            if event.key == K_ESCAPE:
+                pygame.quit()
+                sys.exit()
+            # update paddle state
+            if event.key == K_w and left_paddle_state == PADDLE_STOP:
+                left_paddle_state = PADDLE_UP
+            elif event.key == K_s and left_paddle_state == PADDLE_STOP:
+                left_paddle_state = PADDLE_DOWN
+            elif event.key == K_UP and right_paddle_state == PADDLE_STOP:
+                right_paddle_state = PADDLE_UP
+            elif event.key == K_DOWN and right_paddle_state == PADDLE_STOP:
+                right_paddle_state = PADDLE_DOWN
+        elif event.type == KEYUP:
+            # update paddle state
+            if event.key == K_w and left_paddle_state == PADDLE_UP:
+                left_paddle_state = PADDLE_STOP
+            elif event.key == K_s and left_paddle_state == PADDLE_DOWN:
+                left_paddle_state = PADDLE_STOP
+            elif event.key == K_UP and right_paddle_state == PADDLE_UP:
+                right_paddle_state = PADDLE_STOP
+            elif event.key == K_DOWN and right_paddle_state == PADDLE_DOWN:
+                right_paddle_state = PADDLE_STOP
+```
+
+We have also added an additional event handler for the `ESC` key
+being pressed down,
+so that the game can be ended either by closing the window,
+or by pressing the `ESC` key.
+
+The state of our paddles now directly affects the state of our whole game.
+If, e.g. the left paddle is in the `PADDLE_DOWN` state,
+we need to increase its y-coordinate value by a certain amount.
+We will call this the `PADDLE_SPEED`.
+It is measured in pixels per frame,
+and we add it to the other constants defining our paddles:
+
+```python
+PADDLE_WIDTH = 10
+PADDLE_HEIGHT = 60
+PADDLE_OFFSET = 10
+PADDLE_SPEED = 10
+```
+
+The code updating the game state then is fairly straightforward,
+and we will add it to the `update game state` section of our game:
+
+```python
+    # update game state
+    if left_paddle_state == PADDLE_UP:
+        left_paddle.y -= PADDLE_SPEED
+    elif left_paddle_state == PADDLE_DOWN:
+        left_paddle.y += PADDLE_SPEED
+
+    if right_paddle_state == PADDLE_UP:
+        right_paddle.y -= PADDLE_SPEED
+    elif right_paddle_state == PADDLE_DOWN:
+        right_paddle.y += PADDLE_SPEED
+```
+
+Running this code,
+the paddles will move accordingly,
+but there are two problems:
+
+1.  Depending on your computer's speed,
+    the paddles may move very fast.
+2.  The paddles can move out of the playing field.
+
+We will fix the first one now,
+and introduce how to stop the second problem from happening
+using *collision detection* in the next section.
+
+In the current version of the game,
+pygame executes the event loop as fast as it can.
+This means that after pygame is done drawing the scene,
+it immediately returns to the beginning of the main game loop,
+processes events,
+and updates game state,
+and then proceeds to draw the new scene again.
+On a fast computer,
+this leads to a high frame rate,
+on a slower computer to a lower one.
+Also,
+depending on the events and states,
+processing and updating may take longer for some frames than others,
+resulting in a *variable* frame rate.
+Pygame has been designed for a *fixed* frame rate
+to avoid all these problems.
+In order to achieve a fixed frame rate,
+we need to first decide on a frame rate that is high enough
+to give us the illusion of smooth movement,
+but low enough as to not overpower slower computers.
+30 frames per second is a good value.
+We can add the following to our constants section,
+right after the definition of our paddle states:
+
+```python
+FRAMES_PER_SECOND = 30
+```
+
+We then need a clock to measure time.
+Python provides us one.
+Right after `pygame.init()`,
+we can add the following line to establish our frame rate clock:
+
+```python
+FPS_CLOCK = pygame.time.Clock()
+```
+
+At the very end of our main game loop,
+just after `pygame.display.update()`,
+we will add the following line:
+
+```python
+    FPS_CLOCK.tick(FRAMES_PER_SECOND)
+```
+
+Pygame will use this to essentially pause the game
+for just the right amount of time
+to achieve a frame rate of 30 frames per second.
+
+The following picture shows the game in its current state,
+with the left paddle partially moved down off the screen
+and the right paddle moved up:
+
+![picture of the paddles partially off screen](paddles_off_screen.png)
 
 ## License
 
