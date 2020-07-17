@@ -109,6 +109,21 @@ while True:
     elif right_paddle_state == PADDLE_DOWN:
         right_paddle.y += PADDLE_SPEED
 
+    # stop paddles at top and bottom boundaries
+    if left_paddle.colliderect(TOP_BOUNDARY):
+        left_paddle_state = PADDLE_STOP
+        left_paddle.top = TOP_BOUNDARY.bottom
+    if left_paddle.colliderect(BOTTOM_BOUNDARY):
+        left_paddle_state = PADDLE_STOP
+        left_paddle.bottom = BOTTOM_BOUNDARY.top
+
+    if right_paddle.colliderect(TOP_BOUNDARY):
+        right_paddle_state = PADDLE_STOP
+        right_paddle.top = TOP_BOUNDARY.bottom
+    if right_paddle.colliderect(BOTTOM_BOUNDARY):
+        right_paddle_state = PADDLE_STOP
+        right_paddle.bottom = BOTTOM_BOUNDARY.top
+
     # draw scene
     DISPLAY_SURFACE.fill(BLACK)
     for rect in (NET,

@@ -806,6 +806,54 @@ and the right paddle moved up:
 
 ![picture of the paddles partially off screen](paddles_off_screen.png)
 
+### Stopping the Paddles at the Boundaries
+
+When a paddle hits a boundary,
+it needs to be put into the `PADDLE_STOP` state.
+More generally,
+"hitting" something in a game is referred to as a *collision*
+between two game objects.
+
+The need for collision detection is so common in game engines,
+that they all support multiple efficient ways to perform it.
+In pygame,
+we can use the `colliderect()` method to detect a collision
+between any two rectangles.
+The following lines of code demonstrate how to detect a collision
+between the left paddle and the top boundary.
+This code should be inserted right after we have moved the paddles:
+
+```python
+    # stop paddles at top and bottom boundaries
+    if left_paddle.colliderect(TOP_BOUNDARY):
+        left_paddle_state = PADDLE_STOP
+        left_paddle.top = TOP_BOUNDARY.bottom
+```
+
+If a collision is detected,
+the paddle is put into the `PADDLE_STOP` state,
+and the paddle's `top` is aligned to the boundary's `bottom`,
+as it may already have moved further into the boundary.
+This relieves us from the tedious offset calculations
+involving the anchor points.
+The code for the other combinations of paddle and boundary conditions
+is very similar:
+
+```python
+    if left_paddle.colliderect(BOTTOM_BOUNDARY):
+        left_paddle_state = PADDLE_STOP
+        left_paddle.bottom = BOTTOM_BOUNDARY.top
+
+    if right_paddle.colliderect(TOP_BOUNDARY):
+        right_paddle_state = PADDLE_STOP
+        right_paddle.top = TOP_BOUNDARY.bottom
+    if right_paddle.colliderect(BOTTOM_BOUNDARY):
+        right_paddle_state = PADDLE_STOP
+        right_paddle.bottom = BOTTOM_BOUNDARY.top
+```
+
+Running the code now results in the paddles staying on the screen.
+
 ## License
 
 SPDX-License-Identifier: CC-BY-SA-4.0
