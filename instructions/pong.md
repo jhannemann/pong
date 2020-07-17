@@ -10,7 +10,7 @@ and the [pygame](https://pygame.org) game engine.
 On Windows or MacOS,
 download the latest version of Python 3
 from the [Python website](https://www.python.org/downloads/).
-On Linux, install it using your distibution's package manager.
+On Linux, install it using your distribution's package manager.
 
 pygame installation is done via `pip`,
 the *Package Installer for Python*.
@@ -341,6 +341,195 @@ Use `pong.py` as the name.
 The program will then open an empty window with a black background
 and the name *Pong* in its title bar:
 ![picture of empty window with title "Pong"](empty_window.png)
+
+### Drawing the Playing Field
+
+Since we'll be drawing the playing field elements in white,
+let's add that color,
+right after we define `BLACK`:
+
+```python
+WHITE = (255, 255, 255)
+```
+
+Since white is the presence of all colors,
+and individual 8-bit values for red, green, and blue can range from 0 to 255,
+white is `(255, 255, 255)`.
+All other shades of gray,
+down to black,
+would have identical RGB values anywhere between 0 and 255.
+
+The playing field will look like this
+(colors are inverted, for better readability of the labels):
+
+![picture of the playing field geometry](geometry.svg)
+
+It consists of 7 rectangles
+(which are very convenient in pygame to create, manipulate, and draw):
+
+1.  `NET`
+2.  `TOP_BOUNDARY`
+3.  `BOTTOM_BOUNDARY`
+4.  `LEFT_BOUNDARY`
+5.  `RIGHT_BOUNDARY`
+6.  `left_paddle`
+7.  `right_paddle`
+
+Note that we have already named the rectangles which will not move
+using all caps letters,
+indicating that they are constant objects in Python.
+Likewise,
+since the paddles will move up and down,
+and therefore change when the program runs,
+we have named them using lower caps letters,
+in accordance with PEP-8.
+
+Moving or not,
+all these rectangles,
+with the exception of the net,
+will interact with the ball,
+as the ball will bounce off the paddles and the top and bottom boundaries.
+Also, when the ball hits either the left or right boundary,
+we know that the respective player has missed it with the paddle,
+and the opposing player will be awarded a point.
+
+We can pick our values for `NET_WIDTH`, `BOUNDARY_THICKNESS`, `PADDLE_WIDTH`,
+`PADDLE_HEIGHT`, and `PADDLE_OFFSET` any way that is aesthetically pleasing
+and --- more importantly --- to enhance game play.
+For now, we will choose
+
+```python
+BOUNDARY_THICKNESS = 5
+
+NET_WIDTH = 10
+```
+
+with all measurements being in pixels.
+We will choose the values for the paddles
+after we're done drawing the constant parts of the game.
+Those lines will be added right after the creation of the color constants.
+
+Pygame's coordinate system has its coordinate system origin
+in the top left corner of the window.
+Increasing the x-coordinate will move to the right,
+increasing the y-coordinate will move down.
+If you are familiar with the Cartesian coordinate system from mathematics
+(origin is bottom left and increasing y moves up),
+this may look unusual,
+but all 2D game engines work that way.
+This comes from the original electron beam of a cathode-ray tube
+(a.k.a. television),
+starting at the top left of the screen and moving right and down
+to draw the picture.
+Early video games could use the time it took for the electron beam
+to move across the screen to complete some computations
+before the beam arrived to draw an object.
+
+When pygame draws a rectangle on the screen at position `(x, y)`,
+it will treat those coordinates as the top left of the rectangle to be drawn.
+The top left corner is said to be the *anchor point* or *hot spot*
+of the rectangle.
+
+Thus,
+creating the `TOP_BOUNDARY` is trivial,
+as its anchor point coincides with the origin,
+and it has a width equal to `WINDOW_WIDTH`,
+and a height equal to `BOUNDARY_THICKNESS`:
+
+```python
+TOP_BOUNDARY = pygame.Rect(0,
+                           0,
+                           WINDOW_WIDTH,
+                           BOUNDARY_THICKNESS)
+```
+
+The `NET` is trickier.
+Its y-coordinate still is at the top of the screen
+(i.e. `0`),
+but its y-coordinate is *not* in the center of the screen.
+We want the *center* of the rectangle to be in the center of the screen,
+which means we must move the anchor point's x-coordinate to the left
+(i.e. *subtract*)
+by `NET_WIDTH/2`.
+The position and dimensions of the `NET` therefore is:
+
+```python
+NET = pygame.Rect(WINDOW_WIDTH/2 - NET_WIDTH/2, 0, NET_WIDTH, WINDOW_HEIGHT)
+```
+
+#### A Note on Code Layout
+
+You have probably noted that the layout of the code for `TOP_BOUNDARY`
+and `NET` looks different.
+The simple reason for this is that PEP-8 recommends to not exceed a line length
+of 80 characters (columns).
+The deeper reason for this is code readability,
+and connected to the reason why traditional newspapers
+(remember those?)
+use a multi-column layout.
+About 80 characters
+(give or take)
+can be read by humans without the need to move their heads.
+Therefore,
+restricting the length of lines of code
+enables us to read and comprehend code more quickly,
+which is essential for efficient code review and improved code quality.
+
+We can now add those two lines after the creation of our previous constants.
+The `BOTTOM_BOUNDARY` needs an adjustment similar to the `NET`.
+Its anchor point's x-coordinate is zero,
+as it coincides with the left edge of the window,
+but its y-coordinate needs to be lifted
+(i.e. subtracted)
+from the bottom by `BOUNDARY_THICKNESS`:
+
+```python
+BOTTOM_BOUNDARY = pygame.Rect(0,
+                              WINDOW_HEIGHT - BOUNDARY_THICKNESS,
+                              WINDOW_WIDTH,
+                              BOUNDARY_THICKNESS)
+```
+
+For `LEFT_BOUNDARY` and `RIGHT_BOUNDARY`,
+the situation is reversed in terms of the x- and y-coordinates,
+but otherwise identical:
+
+```python
+LEFT_BOUNDARY = pygame.Rect(0,
+                            0,
+                            BOUNDARY_THICKNESS,
+                            WINDOW_HEIGHT)
+RIGHT_BOUNDARY = pygame.Rect(WINDOW_WIDTH - BOUNDARY_THICKNESS,
+                             0,
+                             BOUNDARY_THICKNESS,
+                             WINDOW_HEIGHT)
+```
+
+With all those lines of code added before `pygame.init()`,
+we can now draw those rectangles in the main game loop.
+Just after `DISPLAY_SURFACE.fill(BLACK)`
+and before `pygame.display.update()`,
+we add the follwing code:
+
+```python
+for rect in (NET,
+             TOP_BOUNDARY, BOTTOM_BOUNDARY,
+             LEFT_BOUNDARY, RIGHT_BOUNDARY):
+    pygame.draw.rect(DISPLAY_SURFACE, WHITE, rect)
+```
+
+This collects all our rectangles into a tuple
+(note the parentheses around the comma-separated list),
+and iterates over each one,
+drawing it in white on the `DISPLAY_SURFACE`,
+i.e. the screen.
+Using iteration over a tuple saves us from typing the same `draw()` command
+over and over, where nothing but the name of the rectangle to be drawn
+would have changed.
+
+Running the program at this stage produces the following window:
+
+![picture of the playing field](playing_field.png)
 
 ## License
 
