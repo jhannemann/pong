@@ -32,7 +32,7 @@ py --version
 The answer should be something like `Python 3.8.3`.
 Install pygame with the following command:
 ```
-py -m pip install -U 'pygame>=2.0.0-dev10' --user
+py -m pip install -U "pygame>=2.0.0-dev10" --user
 ```
 
 ### MacOS and Linux
@@ -41,7 +41,7 @@ On a Mac or Linux PC,
 open up the Terminal app.
 Install pygame with the following command:
 ```
-python3 -m pip install -U 'pygame>=2.0.0-dev10' --user
+python3 -m pip install -U "pygame>=2.0.0-dev10" --user
 ```
 
 ## Coding Guidelines
