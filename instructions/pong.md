@@ -5,6 +5,9 @@ of the classic video game [Pong](https://en.wikipedia.org/wiki/Pong),
 using the [Python](https://python.org) programming language
 and the [pygame](https://pygame.org) game engine.
 
+A playlist with videos showing the steps is
+[available on YouTube](https://www.youtube.com/playlist?list=PLsGmgprYLmdhoWBwUB-dF-osEhzGBhvS8).
+
 ## Installing Python and pygame
 
 On Windows or MacOS,
@@ -452,7 +455,7 @@ TOP_BOUNDARY = pygame.Rect(0,
 The `NET` is trickier.
 Its y-coordinate still is at the top of the screen
 (i.e. `0`),
-but its y-coordinate is *not* in the center of the screen.
+but its x-coordinate is *not* in the center of the screen.
 We want the *center* of the rectangle to be in the center of the screen,
 which means we must move the anchor point's x-coordinate to the left
 (i.e. *subtract*)
@@ -551,13 +554,14 @@ The position of `left_paddle` is `PADDLE_OFFSET` to the right
 of the right edge of `LEFT_BOUNDARY`,
 which in itself it `BOUNDARY_THICKNESS` to the right
 of the left edge of the screen.
-The x-coordinate of `left_paddle` thus is `PADDLE_OFFSET + BOUNDARY_THICKNESS`.
+The x-coordinate of `left_paddle` thus is
+`BOUNDARY_THICKNESS + PADDLE_OFFSET`.
 Similar to the `NET`,
 we want the initial position of the paddles to be
 at the center of the `WINDOW_HEIGHT`,
 which means we have to subtract half of the `PADDLE_HEIGHT`.
 The y-coordinate of the left_paddle therefore is
-`WINDOW_HEIGHT - PADDLE_HEIGHT/2`.
+`WINDOW_HEIGHT/2 - PADDLE_HEIGHT/2`.
 We can thus create the `left_paddle` right after the `RIGHT_BOUNDARY`
 with the following line of code:
 

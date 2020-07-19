@@ -12,8 +12,12 @@ where I teach computer science and video game development.
 
 ![Image of Pong Game](instructions/pong.png)
 
-Going through the repository step by step as described in the instructions,
+Going through the repository step by step as described in the 
+[instructions](instructions/pong.md),
 this simple game demonstrates the basics of game development in general
 and [Python](https://python.org) and [pygame](https://pygame.org) in particular.
+
+A playlist with videos showing the steps is 
+[available on YouTube](https://www.youtube.com/playlist?list=PLsGmgprYLmdhoWBwUB-dF-osEhzGBhvS8).
 
 Enjoy!
