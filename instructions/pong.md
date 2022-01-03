@@ -20,10 +20,8 @@ the *Package Installer for Python*.
 To make sure that pygame works with Python 3
 and also works with high-resolution screens
 (such as a Mac Retina Display),
-we will install the latest beta version for pygame 2.
-As of this writing, the pygame developers are close
-to officially release pygame 2.0,
-so we should not run into any issues with the beta version.
+we will install pygame version 2,
+which is the default by now.
 
 ### Windows
 
@@ -32,10 +30,10 @@ Make sure you have Python3 installed by typing
 ```
 py --version
 ```
-The answer should be something like `Python 3.8.3`.
+The answer should be something like `Python 3.10.1`.
 Install pygame with the following command:
 ```
-py -m pip install -U "pygame>=2.0.0-dev10" --user
+py -m pip install -U pygame --user
 ```
 
 ### MacOS and Linux
@@ -44,7 +42,7 @@ On a Mac or Linux PC,
 open up the Terminal app.
 Install pygame with the following command:
 ```
-python3 -m pip install -U "pygame>=2.0.0-dev10" --user
+python3 -m pip install -U pygame --user
 ```
 
 ## Coding Guidelines
